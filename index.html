@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Xuân Cương Studio - Chọn Ảnh Trực Tuyến</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-color: #f39c12; --bg-color: #f8f9fa; --text-color: #2c3e50; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; padding-bottom: 100px; }
+        
+        .header { background: #fff; padding: 15px 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; color: #111; }
+        .header p { color: #7f8c8d; margin: 8px 0 0 0; font-size: 13px; }
+        
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        
+        .control-panel { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
+        
+        /* Chống zoom trên iOS bằng font-size: 16px */
+        .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; transition: 0.3s; }
+        .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1); }
+        
+        .input-group { display: flex; gap: 10px; flex-direction: column; } /* Mặc định xếp dọc trên đt */
+        @media (min-width: 600px) { .input-group { flex-direction: row; } } /* Xếp ngang trên máy tính */
+        
+        .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+        @media (min-width: 600px) { .btn { width: auto; } }
+        
+        .btn-primary { background: var(--primary-color); color: #fff; }
+        .btn-primary:hover { background: #e67e22; }
+        .btn-dark { background: #2c3e50; color: #fff; }
+        .btn-dark:hover { background: #1a252f; }
+
+        /* Giao diện lưới ảnh tối ưu Mobile (2 cột) */
+        .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        @media (min-width: 600px) { .gallery { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; } }
+        
+        .photo-card { background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: 0.3s; position: relative; display: flex; flex-direction: column; border: 2px solid transparent; }
+        .photo-card.selected { border-color: var(--primary-color); box-shadow: 0 6px 15px rgba(243, 156, 18, 0.2); }
+        
+        .img-container { position: relative; cursor: pointer; aspect-ratio: 2/3; overflow: hidden; }
+        .img-container img { width: 100%; height: 100%; object-fit: cover; transition: 0.5s; }
+        @media (min-width: 768px) { .photo-card:hover .img-container img { transform: scale(1.05); } }
+        
+        .check-badge { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; background: rgba(0,0,0,0.4); border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; transition: 0.3s; opacity: 0.8; }
+        .photo-card.selected .check-badge { background: var(--primary-color); border-color: var(--primary-color); opacity: 1; }
+        
+        .photo-info { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .photo-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .file-name { font-size: 12px; font-weight: 600; color: #34495e; word-break: break-all; }
+        
+        .btn-download { color: var(--primary-color); text-decoration: none; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(243, 156, 18, 0.1); transition: 0.2s; white-space: nowrap; }
+        .btn-download:hover { background: var(--primary-color); color: #fff; }
+        
+        /* Chống zoom trên iOS */
+        .note-input { width: 100%; padding: 10px; border: 1px dashed #ddd; border-radius: 6px; font-size: 16px; resize: none; display: none; outline: none; }
+        .note-input:focus { border-color: var(--primary-color); border-style: solid; }
+        .photo-card.selected .note-input { display: block; }
+
+        .action-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 12px 15px; box-shadow: 0 -5px 15px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        .action-bar .btn { width: auto; padding: 10px 15px; font-size: 14px; }
+        
+        #loading { display: none; text-align: center; margin: 30px 0; color: #7f8c8d; font-size: 15px; }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>XUÂN CƯƠNG STUDIO</h1>
+        <p>Hệ thống chọn và duyệt ảnh chất lượng cao</p>
+    </div>
+
+    <div class="container">
+        <div class="control-panel">
+            <div class="form-group">
+                <label>Thông tin khách hàng</label>
+                <input type="text" id="cusName" class="form-control" placeholder="Tên hoặc Mã hoá đơn (VD: NguyenVanA, HD001)...">
+            </div>
+            <div class="form-group">
+                <label>Link thư mục Google Drive</label>
+                <div class="input-group">
+                    <input type="text" id="driveLink" class="form-control" placeholder="Dán link Google Drive vào đây...">
+                    <button class="btn btn-dark" onclick="fetchPhotos()">
+                        <i class="fas fa-sync-alt"></i> Tải ảnh
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loading"><i class="fas fa-spinner spinner"></i> Đang kết nối tới máy chủ...</div>
+        <div class="gallery" id="gallery"></div>
+    </div>
+
+    <div class="action-bar" id="actionBar" style="display: none;">
+        <div style="font-size: 14px; font-weight: 600;">Đã chọn: <strong id="selected-count" style="color: var(--primary-color); font-size: 18px;">0</strong> ảnh</div>
+        <button class="btn btn-primary" onclick="submitToSheet()" id="btnSubmit">
+            <i class="fas fa-paper-plane"></i> Gửi Yêu Cầu
+        </button>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbwQ-Lz2RJaKZfI8c0sT5jHMvh2gXamEq3zKISGFOX91tDdGiQY_uNoEWwQ49UozDvvbkg/exec"; 
+        
+        let allPhotos = [];
+
+        function extractFolderId(url) {
+            const match = url.match(/[-\w]{25,}/);
+            return match ? match[0] : null;
+        }
+
+        async function fetchPhotos() {
+            const link = document.getElementById('driveLink').value;
+            const folderId = extractFolderId(link);
+            
+            if (!folderId) {
+                alert("Link không hợp lệ. Vui lòng kiểm tra lại!");
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('gallery').innerHTML = '';
+            document.getElementById('actionBar').style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_URL}?folderId=${folderId}`);
+                const data = await response.json();
+
+                document.getElementById('loading').style.display = 'none';
+
+                if (data.error) {
+                    alert("Lỗi: " + data.error);
+                    return;
+                }
+                
+                allPhotos = data.map(p => ({ ...p, selected: false, note: '' }));
+                renderGallery();
+                document.getElementById('actionBar').style.display = 'flex';
+                updateCount();
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert("Lỗi kết nối mạng. Vui lòng thử lại.");
+            }
+        }
+
+        function renderGallery() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            
+            allPhotos.forEach((photo, index) => {
+                const div = document.createElement('div');
+                div.className = `photo-card ${photo.selected ? 'selected' : ''}`;
+                
+                const downloadLink = `https://drive.google.com/uc?export=download&id=${photo.id}`;
+                
+                div.innerHTML = `
+                    <div class="img-container" onclick="toggleSelect(${index})">
+                        <img src="${photo.url}" loading="lazy">
+                        <div class="check-badge"><i class="fas fa-check"></i></div>
+                    </div>
+                    <div class="photo-info">
+                        <div class="photo-header">
+                            <span class="file-name">${photo.name}</span>
+                            <a href="${downloadLink}" target="_blank" class="btn-download" title="Tải ảnh gốc"><i class="fas fa-download"></i> Tải Ảnh</a>
+                        </div>
+                        <textarea class="note-input" rows="2" placeholder="Ghi chú chỉnh sửa (nếu có)..." 
+                            onchange="updateNote(${index}, this.value)">${photo.note}</textarea>
+                    </div>
+                `;
+                gallery.appendChild(div);
+            });
+        }
+
+        function toggleSelect(index) {
+            allPhotos[index].selected = !allPhotos[index].selected;
+            renderGallery();
+            updateCount();
+        }
+
+        function updateNote(index, value) {
+            allPhotos[index].note = value;
+        }
+
+        function updateCount() {
+            const count = allPhotos.filter(p => p.selected).length;
+            document.getElementById('selected-count').innerText = count;
+        }
+
+        async function submitToSheet() {
+            const selectedPhotos = allPhotos.filter(p => p.selected);
+            if (selectedPhotos.length === 0) {
+                alert('Vui lòng chọn ít nhất 1 ảnh!');
+                return;
+            }
+
+            const name = document.getElementById('cusName').value.trim();
+            if (!name) {
+                alert('Vui lòng điền Tên hoặc Mã hoá đơn để Studio tiện xử lý nhé!');
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmit');
+            btn.innerHTML = '<i class="fas fa-spinner spinner"></i> Đang gửi...';
+            btn.disabled = true;
+
+            const payload = {
+                name: name,
+                selections
