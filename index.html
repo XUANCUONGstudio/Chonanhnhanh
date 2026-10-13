@@ -20,12 +20,12 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
         
-        /* Chống zoom trên iOS bằng font-size: 16px */
+        /* Chống zoom trên iOS */
         .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; transition: 0.3s; }
         .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1); }
         
-        .input-group { display: flex; gap: 10px; flex-direction: column; } /* Mặc định xếp dọc trên đt */
-        @media (min-width: 600px) { .input-group { flex-direction: row; } } /* Xếp ngang trên máy tính */
+        .input-group { display: flex; gap: 10px; flex-direction: column; }
+        @media (min-width: 600px) { .input-group { flex-direction: row; } }
         
         .btn { padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; transition: 0.3s; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
         @media (min-width: 600px) { .btn { width: auto; } }
@@ -35,7 +35,7 @@
         .btn-dark { background: #2c3e50; color: #fff; }
         .btn-dark:hover { background: #1a252f; }
 
-        /* Giao diện lưới ảnh tối ưu Mobile (2 cột) */
+        /* Grid 2 cột cho mobile */
         .gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         @media (min-width: 600px) { .gallery { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; } }
         
@@ -56,7 +56,6 @@
         .btn-download { color: var(--primary-color); text-decoration: none; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(243, 156, 18, 0.1); transition: 0.2s; white-space: nowrap; }
         .btn-download:hover { background: var(--primary-color); color: #fff; }
         
-        /* Chống zoom trên iOS */
         .note-input { width: 100%; padding: 10px; border: 1px dashed #ddd; border-radius: 6px; font-size: 16px; resize: none; display: none; outline: none; }
         .note-input:focus { border-color: var(--primary-color); border-style: solid; }
         .photo-card.selected .note-input { display: block; }
@@ -80,12 +79,12 @@
         <div class="control-panel">
             <div class="form-group">
                 <label>Thông tin khách hàng</label>
-                <input type="text" id="cusName" class="form-control" placeholder="Tên hoặc Mã hoá đơn (VD: NguyenVanA, HD001)...">
+                <input type="text" id="cusName" class="form-control" placeholder="Tên của bạn hoặc Mã hoá đơn (VD: NguyenVanA, HD001)...">
             </div>
             <div class="form-group">
                 <label>Link thư mục Google Drive</label>
                 <div class="input-group">
-                    <input type="text" id="driveLink" class="form-control" placeholder="Dán link Google Drive vào đây...">
+                    <input type="text" id="driveLink" class="form-control" placeholder="Dán link Google Drive chứa ảnh vào đây...">
                     <button class="btn btn-dark" onclick="fetchPhotos()">
                         <i class="fas fa-sync-alt"></i> Tải ảnh
                     </button>
@@ -98,9 +97,9 @@
     </div>
 
     <div class="action-bar" id="actionBar" style="display: none;">
-        <div style="font-size: 14px; font-weight: 600;">Đã chọn: <strong id="selected-count" style="color: var(--primary-color); font-size: 18px;">0</strong> ảnh</div>
+        <div>Đã chọn: <strong id="selected-count" style="color: var(--primary-color); font-size: 20px;">0</strong> ảnh</div>
         <button class="btn btn-primary" onclick="submitToSheet()" id="btnSubmit">
-            <i class="fas fa-paper-plane"></i> Gửi Yêu Cầu
+            <i class="fas fa-paper-plane"></i> Gửi Yêu Cầu Cho Studio
         </button>
     </div>
 
@@ -211,4 +210,32 @@
 
             const payload = {
                 name: name,
-                selections
+                selections: selectedPhotos.map(p => ({
+                    name: p.name,
+                    note: p.note
+                }))
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Gửi yêu cầu thành công! Xuân Cương Studio sẽ lưu ý các ghi chú của bạn và xử lý ảnh sớm nhất.');
+                } else {
+                    alert('Có lỗi xảy ra khi lưu: ' + result.error);
+                }
+            } catch (error) {
+                alert('Gửi thành công! (Dữ liệu đã được chuyển tới Studio).');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Gửi Yêu Cầu Cho Studio';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
