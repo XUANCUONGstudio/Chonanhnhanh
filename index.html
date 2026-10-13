@@ -20,7 +20,6 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
         
-        /* Chống zoom trên iOS */
         .form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; outline: none; transition: 0.3s; }
         .form-control:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1); }
         
@@ -50,13 +49,13 @@
         .photo-card.selected .check-badge { background: var(--primary-color); border-color: var(--primary-color); opacity: 1; }
         
         .photo-info { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-        .photo-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px; }
-        .file-name { font-size: 12px; font-weight: 600; color: #34495e; word-break: break-all; }
+        .file-name { font-size: 12px; font-weight: 600; color: #34495e; word-break: break-all; margin-bottom: 5px; }
         
-        .btn-download { color: var(--primary-color); text-decoration: none; font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(243, 156, 18, 0.1); transition: 0.2s; white-space: nowrap; }
-        .btn-download:hover { background: var(--primary-color); color: #fff; }
+        .photo-actions { display: flex; gap: 5px; }
+        .btn-action { flex: 1; text-align: center; color: var(--primary-color); text-decoration: none; font-size: 12px; font-weight: 600; padding: 6px 4px; border-radius: 4px; background: rgba(243, 156, 18, 0.1); transition: 0.2s; border: none; cursor: pointer; font-family: inherit; }
+        .btn-action:hover { background: var(--primary-color); color: #fff; }
         
-        .note-input { width: 100%; padding: 10px; border: 1px dashed #ddd; border-radius: 6px; font-size: 16px; resize: none; display: none; outline: none; }
+        .note-input { width: 100%; padding: 10px; border: 1px dashed #ddd; border-radius: 6px; font-size: 16px; resize: none; display: none; outline: none; margin-top: 5px; }
         .note-input:focus { border-color: var(--primary-color); border-style: solid; }
         .photo-card.selected .note-input { display: block; }
 
@@ -66,9 +65,21 @@
         #loading { display: none; text-align: center; margin: 30px 0; color: #7f8c8d; font-size: 15px; }
         .spinner { animation: spin 1s linear infinite; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Giao diện xem ảnh phóng to (Lightbox) */
+        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .lightbox img { max-width: 95%; max-height: 85%; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .lightbox-close { position: absolute; top: 15px; right: 20px; color: white; font-size: 35px; font-weight: bold; cursor: pointer; z-index: 1001; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .lightbox-close:hover { color: var(--primary-color); }
     </style>
 </head>
 <body>
+
+    <!-- Lightbox Modal để phóng to ảnh -->
+    <div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+        <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+        <img id="lightbox-img" src="">
+    </div>
 
     <div class="header">
         <h1>XUÂN CƯƠNG STUDIO</h1>
@@ -159,14 +170,15 @@
                 const downloadLink = `https://drive.google.com/uc?export=download&id=${photo.id}`;
                 
                 div.innerHTML = `
-                    <div class="img-container" onclick="toggleSelect(${index})">
+                    <div class="img-container" onclick="toggleSelect(${index}, this.parentElement)">
                         <img src="${photo.url}" loading="lazy">
                         <div class="check-badge"><i class="fas fa-check"></i></div>
                     </div>
                     <div class="photo-info">
-                        <div class="photo-header">
-                            <span class="file-name">${photo.name}</span>
-                            <a href="${downloadLink}" target="_blank" class="btn-download" title="Tải ảnh gốc"><i class="fas fa-download"></i> Tải Ảnh</a>
+                        <span class="file-name">${photo.name}</span>
+                        <div class="photo-actions">
+                            <button class="btn-action" onclick="openLightbox('${photo.url}')"><i class="fas fa-search-plus"></i> Phóng to</button>
+                            <a href="${downloadLink}" target="_blank" class="btn-action"><i class="fas fa-download"></i> Tải Ảnh</a>
                         </div>
                         <textarea class="note-input" rows="2" placeholder="Ghi chú chỉnh sửa (nếu có)..." 
                             onchange="updateNote(${index}, this.value)">${photo.note}</textarea>
@@ -176,9 +188,14 @@
             });
         }
 
-        function toggleSelect(index) {
+        // HÀM MỚI: Chỉ thêm/xoá viền vàng mà KHÔNG tải lại (render) toàn bộ danh sách, giúp hết lỗi nháy màn hình
+        function toggleSelect(index, cardElement) {
             allPhotos[index].selected = !allPhotos[index].selected;
-            renderGallery();
+            if (allPhotos[index].selected) {
+                cardElement.classList.add('selected');
+            } else {
+                cardElement.classList.remove('selected');
+            }
             updateCount();
         }
 
@@ -189,6 +206,20 @@
         function updateCount() {
             const count = allPhotos.filter(p => p.selected).length;
             document.getElementById('selected-count').innerText = count;
+        }
+        
+        // HÀM MỚI: Mở & Đóng giao diện xem ảnh phóng to
+        function openLightbox(url) {
+            document.getElementById('lightbox-img').src = url;
+            document.getElementById('lightbox').style.display = 'flex';
+        }
+
+        function closeLightbox(e) {
+            // Chỉ đóng khi click ra ngoài vùng nền đen hoặc nút X
+            if(e.target.id === 'lightbox' || e.target.className === 'lightbox-close') {
+                document.getElementById('lightbox').style.display = 'none';
+                document.getElementById('lightbox-img').src = '';
+            }
         }
 
         async function submitToSheet() {
